@@ -1,0 +1,9 @@
+## Interface: 20502
+
+## Title: |cffA02C2Fbd|rThreat
+## Author: Blooblahguy
+## DefaultState: Enabled
+## LoadOnDemand: 0
+## SavedVariables: BDTHREAT_SAVE
+
+bdThreat.lua
