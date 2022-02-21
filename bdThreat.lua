@@ -373,13 +373,13 @@ function addon:update_display()
 			bar.name:SetTextColor(1, .78, .31)
 			bar.name:SetFont(media.font, bar:GetHeight() * 0.4, "OUTLINE")
 			bar.values:SetTextColor(1, .78, .31)
-			bar.values:SetFont(media.font, 14, "OUTLINE")
+			bar.values:SetFont(media.font, bar:GetHeight() * 0.4, "OUTLINE")
 		else
 			-- bar:SetHeight(config.bar_height)
 			bar.name:SetTextColor(1, 1, 1)
 			bar.name:SetFont(media.font, bar:GetHeight() * 0.5, "OUTLINE")
 			bar.values:SetTextColor(1, 1, 1)
-			bar.values:SetFont(media.font, 12, "OUTLINE")
+			bar.values:SetFont(media.font, bar:GetHeight() * 0.5, "OUTLINE")
 		end
 
 		-- set values
