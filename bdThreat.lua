@@ -8,8 +8,6 @@ local testmode = false
 local total = 0
 local noop = function() return false end
 
-UnitGroupRolesAssigned = UnitGroupRolesAssigned or noop
-
 local media = {
 	flat = "Interface\\Buttons\\WHITE8x8",
 	font = "Interface\\Addons\\bdThreat\\PTSansNarrow.ttf",
@@ -148,7 +146,7 @@ local bar_pool = CreateObjectPool(create_bar, release_bar)
 local function store_threat(unit, isTank)
 	local isTanking, status, threatpct, rawthreatpct, threatvalue = UnitDetailedThreatSituation(unit, "target")
 	-- print(unit, UnitDetailedThreatSituation(unit, "target"))
-	if (status ~= nil) then
+	if (status ~= nil) then -- and IsInInstance()
 		local color = {unit_color(unit)}
 		max_value = math.max(max_value, threatvalue)
 		local name = select(1, UnitName(unit))
