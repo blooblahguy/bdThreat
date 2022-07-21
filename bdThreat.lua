@@ -3,7 +3,7 @@ local addonName, addon = ...
 local pixel = (PixelUtil.GetPixelToUIUnitFactor() / GetCVar("uiScale") or 1)
 local border = pixel * 2
 local warned = false -- warning levels for threat
-local alerted = false -- warning levels for threat
+local last_alerted = false -- warning levels for threat
 local testmode = false
 local total = 0
 local noop = function() return false end
@@ -33,24 +33,42 @@ threat:SetUserPlaced(true)
 threat:EnableMouse(true)
 threat:SetResizable(true)
 threat:SetSize(config.window_width, window_height)
-threat:RegisterForDrag("LeftButton","RightButton")
-threat:RegisterForDrag("LeftButton","RightButton")
-threat:SetScript("OnDragStart", function(self) if (IsShiftKeyDown()) then self:StartMoving() end end)
-threat:SetScript("OnDragStop", function(self) self:StopMovingOrSizing() end)
 threat:SetBackdrop({bgFile = media.flat, edgeFile = media.flat, edgeSize = border})
-threat:SetBackdropColor(0, 0, 0, 0.6)
+threat:SetBackdropColor(0, 0, 0, 0.5)
 threat:SetBackdropBorderColor(0, 0, 0, 1)
 threat:SetScript("OnMouseWheel", function(self, delta)
 	config.unit_limit = config.unit_limit - delta
 	addon:kickoff()
 end)
 
--- label text
-threat.text = threat:CreateFontString(nil, "OVERLAY")
-threat.text:SetFont(media.font, 14, "OUTLINE")
-threat.text:SetPoint("CENTER", threat)
-threat.text:SetAlpha(0.5)
-threat.text:SetText("bdThreat")
+-- header bar
+threat.header = CreateFrame("frame", "bdThreat_Header", threat, BackdropTemplateMixin and "BackdropTemplate")
+threat.header:SetMovable(true)
+threat.header:EnableMouse(true)
+threat.header:SetBackdrop({bgFile = media.flat, edgeFile = media.flat, edgeSize = border})
+threat.header:SetBackdropColor(.1, .1, .13, 1)
+threat.header:SetBackdropBorderColor(0, 0, 0, 1)
+threat.header:RegisterForDrag("LeftButton","RightButton")
+threat.header:RegisterForDrag("LeftButton","RightButton")
+threat.header:SetScript("OnDragStart", function(self) self:GetParent():StartMoving() end)
+threat.header:SetScript("OnDragStop", function(self) self:GetParent():StopMovingOrSizing() end)
+threat.header:SetPoint("BOTTOMLEFT", threat, "TOPLEFT", 0, -border)
+threat.header:SetPoint("BOTTOMRIGHT", threat, "TOPRIGHT", 0, -border)
+threat.header:SetHeight(config.bar_height)
+
+-- header label
+threat.header.text = threat.header:CreateFontString(nil, "OVERLAY")
+threat.header.text:SetFont(media.font, 11, "OUTLINE")
+threat.header.text:SetPoint("LEFT", threat.header, 4, 0)
+threat.header.text:SetAlpha(0.7)
+threat.header.text:SetText("bdThreat")
+
+-- -- label text
+-- threat.text = threat:CreateFontString(nil, "OVERLAY")
+-- threat.text:SetFont(media.font, 14, "OUTLINE")
+-- threat.text:SetPoint("CENTER", threat)
+-- threat.text:SetAlpha(0.5)
+-- threat.text:SetText("bdThreat")
 
 -- window dragger
 threat.drag = CreateFrame("Button", nil, threat)
@@ -92,7 +110,7 @@ local function numberize(n)
 		return string.format("%.2fm", n / 10^6)
 	elseif (n >= 10^4) then -- > 10,000
 		return string.format("%.fk", n / 10^3)
-	elseif (n >= 10^3) then -- > 10,000
+	elseif (n >= 10^3) then -- > 1,000
 		return string.format("%.1fk", n / 10^3)
 	else
 		return tostring(n)
@@ -143,10 +161,15 @@ local bar_pool = CreateObjectPool(create_bar, release_bar)
 --===============================================
 -- Main Functions
 --===============================================
+
+
+
+
 local function store_threat(unit, isTank)
 	local isTanking, status, threatpct, rawthreatpct, threatvalue = UnitDetailedThreatSituation(unit, "target")
-	-- print(unit, UnitDetailedThreatSituation(unit, "target"))
+
 	if (status ~= nil) then -- and IsInInstance()
+		threatvalue = threatvalue / 10 -- idk why, this seems to be multiplied by 10?? @TODO check this out
 		local color = {unit_color(unit)}
 		max_value = math.max(max_value, threatvalue)
 		local name = select(1, UnitName(unit))
@@ -197,6 +220,24 @@ local function add_dummy_data(isTank, isTanking, isMe)
 	end
 end
 
+-- function test_alert()
+-- 	local last_alerted = 0
+-- 	local timer = CreateFrame("frame")
+-- 	timer:SetScript("OnUpdate", function()
+-- 		-- print(last_alerted, GetTime() - last_alerted)
+-- 		if (GetTime() - last_alerted >= 1) then -- alert every 1 second at this level
+-- 			last_alerted = GetTime()
+-- 			-- play alerted sound
+-- 			PlaySound(700, "master")
+-- 			-- alerted = true
+-- 		end
+-- 	end)
+-- end
+
+local function isTank(unit)
+	return UnitGroupRolesAssigned(unit) == "TANK" or GetPartyAssignment("MAINTANK", unit)
+end
+
 -- update unit lists
 local function update_units()
 	all_units = {}
@@ -243,14 +284,18 @@ local function update_units()
 	for i = 0, size do
 		local unit = unit_pref..i
 		if (UnitExists(unit) and not UnitIsUnit(unit, "player")) then
-			local isTank = UnitGroupRolesAssigned(unit) == "TANK" or GetPartyAssignment("MAINTANK", unit)
-			store_threat(unit, isTank)
+			store_threat(unit, isTank(unit))
 		end
 	end
 
 	-- now add yourself, cause sometimes we aren't in the raid roster and we need to be forced anyways
-	local meTank = UnitGroupRolesAssigned("player") == "TANK" or GetPartyAssignment("MAINTANK", "player")
+	local meTank = isTank("player")
 	store_threat("player", meTank)
+
+	-- now add your pet, if it exists
+	if (UnitExists("pet")) then
+		store_threat("pet", false)
+	end
 
 	-- ok now let's alert if we're passing the tank
 	if (not meTank) then
@@ -269,14 +314,19 @@ local function update_units()
 			end
 			
 			if (rawthreatpct > 0 and rawthreatpct > config.alert) then
-				if (not alerted) then
+				-- last_alerted = GetTime() - last_alerted
+				-- if (last_alerted < GetTime() + 1) then
+
+				if (GetTime() - last_alerted >= 1) then -- alert every 1 second at this level
+					last_alerted = GetTime()
 					-- play alerted sound
-					PlaySound(17341, "master")
-					alerted = true
+					PlaySound(700, "master")
+					-- alerted = true
 				end
-			else
-				-- reset for next time we need to play it
-				alerted = false
+
+				-- else
+				-- 	-- reset for next time we need to play it
+				-- 	alerted = false
 			end
 		end
 	end
@@ -320,11 +370,11 @@ function addon:update_display()
 	end)
 
 	-- hide threat text
-	if (show[1] ~= nil) then
-		threat.text:Hide()
-	else
-		threat.text:Show()
-	end
+	-- if (show[1] ~= nil) then
+	-- 	threat.text:Hide()
+	-- else
+	-- 	threat.text:Show()
+	-- end
 
 	-- now position items inside of frame
 	for k, info in pairs(show) do
@@ -403,7 +453,15 @@ end
 -- Events
 --===============================================
 function addon:kickoff(self, event, arg1)
-	if (not testmode and not InCombatLockdown()) then
+	local show = false
+	local inInstance, instanceType = IsInInstance()
+	if (inInstance) then
+		show = true
+	end
+	if (testmode) then
+		show = true
+	end
+	if (not show) then
 		threat:Hide()
 		return
 	end
@@ -441,9 +499,10 @@ threat:SetScript("OnEvent", function(self, event, arg1)
 
 	-- continual refresh of test data
 	if (testmode) then
+		local total = 0
 		threat:SetScript("OnUpdate", function(self, elapsed)
 			total = total + elapsed
-			if (total > 3) then
+			if (total > 4) then
 				total = 0
 				addon:kickoff()
 			end
