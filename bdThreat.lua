@@ -109,7 +109,7 @@ local function numberize(n)
 	if (n >= 10^6) then -- > 1,000,000
 		return string.format("%.2fm", n / 10^6)
 	elseif (n >= 10^4) then -- > 10,000
-		return string.format("%.fk", n / 10^3)
+		return string.format("%.fk", n / 10^4)
 	elseif (n >= 10^3) then -- > 1,000
 		return string.format("%.1fk", n / 10^3)
 	else
