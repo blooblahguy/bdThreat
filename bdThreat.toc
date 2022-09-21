@@ -1,4 +1,4 @@
-## Interface: 20502
+## Interface: 30400
 
 ## Title: |cffA02C2Fbd|rThreat
 ## Author: Blooblahguy
