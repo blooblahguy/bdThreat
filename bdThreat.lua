@@ -3,7 +3,7 @@ local addonName, addon = ...
 local pixel = (PixelUtil.GetPixelToUIUnitFactor() / GetCVar("uiScale") or 1)
 local border = pixel * 2
 local warned = false -- warning levels for threat
-local last_alerted = false -- warning levels for threat
+local last_alerted = 0 -- warning levels for threat
 local testmode = false
 local total = 0
 local noop = function() return false end
@@ -320,7 +320,7 @@ local function update_units()
 				if (GetTime() - last_alerted >= 1) then -- alert every 1 second at this level
 					last_alerted = GetTime()
 					-- play alerted sound
-					PlaySound(700, "master")
+					-- PlaySound(700, "master")
 					-- alerted = true
 				end
 
