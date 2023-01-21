@@ -386,14 +386,19 @@ function addon:update_display()
 		-- rawthreatpct = (threatvalue / max_value) * 130
 		-- threatpct = (threatvalue / max_value) * 100
 
+		local r, g, b, a = unpack(color)
+		r = r and r or 1
+		g = g and g or 1
+		b = b and b or 1
+
 		bar:Show()
-		bar:SetStatusBarColor(unpack(color))
+		bar:SetStatusBarColor(r, g, b, 1)
 		bar:SetMinMaxValues(0, max_value)
 		bar:SetValue(threatvalue)
 
 		-- set current aggro target
 		if (isTanking) then
-			bar:SetStatusBarColor(1, 0, 0)
+			bar:SetStatusBarColor(1, 0, 0, 1)
 		end
 
 		-- position and show icons
